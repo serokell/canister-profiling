@@ -1,40 +1,12 @@
 {
   "canisters": {
-    "hashmap": {
-      "type": "motoko",
-      "main": "src/hashmap.mo"
-    },
-    "triemap": {
-      "type": "motoko",
-      "main": "src/triemap.mo"
-    },
     "rbtree": {
       "type": "motoko",
       "main": "src/rbtree.mo"
     },
-    "splay": {
+    "persistentmap": {
       "type": "motoko",
-      "main": "src/splay.mo"
-    },
-    "heap": {
-      "type": "motoko",
-      "main": "src/heap.mo"
-    },
-    "btreemap": {
-      "type": "motoko",
-      "main": "src/btreemap.mo"
-    },
-    "zhenya_hashmap": {
-      "type": "motoko",
-      "main": "src/ZhenyaHashmap.mo"
-    },
-    "buffer": {
-      "type": "motoko",
-      "main": "src/buffer.mo"
-    },
-    "vector": {
-      "type": "motoko",
-      "main": "src/vector.mo"
+      "main": "src/persistentmap.mo"
     }
   },
   "defaults": {

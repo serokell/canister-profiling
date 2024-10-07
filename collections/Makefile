@@ -9,7 +9,7 @@ motoko:
 rust:
 	$(call build,rust)
 
-build: motoko rust
+build: motoko # rust
 
 perf:
 	$(call perf,collections,perf.sh)
