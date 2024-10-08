@@ -7,6 +7,7 @@ let mo_config = record { start_page = 16; page_limit = 128 };
 // let triemap = wasm_profiling("motoko/.dfx/local/canisters/triemap/triemap.wasm", mo_config);
 let rbtree = wasm_profiling("motoko/.dfx/local/canisters/rbtree/rbtree.wasm", mo_config);
 let persistentmap = wasm_profiling("motoko/.dfx/local/canisters/persistentmap/persistentmap.wasm", mo_config);
+let persistentmap_baseline = wasm_profiling("motoko/.dfx/local/canisters/persistentmap_baseline/persistentmap_baseline.wasm", mo_config);
 // let splay = wasm_profiling("motoko/.dfx/local/canisters/splay/splay.wasm", mo_config);
 // let btree = wasm_profiling("motoko/.dfx/local/canisters/btreemap/btreemap.wasm", mo_config);
 // let zhenya = wasm_profiling("motoko/.dfx/local/canisters/zhenya_hashmap/zhenya_hashmap.wasm", mo_config);
@@ -77,40 +78,45 @@ function compare_rb_maps(init_size){
 
 sizes.map(compare_rb_maps);
 
-function perf_persistent_map(init) {
-  let cid = install(persistentmap, encode (), null);
+function perf_persistent_map(wasm, title, init) {
+  let cid = install(wasm, encode (), null);
 
-  output(file, stringify("|", init, "|"));
+  output(file, stringify("|", title, "|", init, "|"));
   call cid.__toggle_tracing();
   call cid.generate(init);
 
   call cid.__toggle_tracing();
   call cid.foldLeft();
-  let svg = stringify("persistentmap_foldLeft_", init, ".svg");
+  let svg = stringify(title, "_foldLeft_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|"));
   flamegraph(cid, "persistentmap.foldLeft", svg);
 
   call cid.foldRight();
-  let svg = stringify("persistentmap_foldRight_", init, ".svg");
+  let svg = stringify(title, "_foldRight_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|"));
   flamegraph(cid, "persistentmap.foldRight", svg);
 
   call cid.mapfilter();
-  let svg = stringify("persistentmap_mapfilter_", init, ".svg");
+  let svg = stringify(title, "_mapfilter_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|"));
   flamegraph(cid, "persistentmap.mapfilter", svg);
 
   call cid.map();
-  let svg = stringify("persistentmap_map_", init, ".svg");
+  let svg = stringify(title, "_map_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|\n"));
   flamegraph(cid, "persistentmap.map", svg);
 
   uninstall(cid);
 };
 
-output(file, stringify("\n## Persistent map API\n\n|size|foldLeft|foldRight|mapfilter|map|\n|--:|--:|--:|--:|--:|\n"));
+function compare_persistent_maps(init){
+  perf_persistent_map(persistentmap, "persistentmap", init);
+  perf_persistent_map(persistentmap_baseline, "persistentmap_baseline", init);
+};
 
-sizes.map(perf_persistent_map);
+output(file, stringify("\n## Persistent map API\n\n| |size|foldLeft|foldRight|mapfilter|map|\n|--:|--:|--:|--:|--:|--:|\n"));
+
+sizes.map(compare_persistent_maps);
 
 /*
 perf(hashmap, "hashmap", init_size, batch_size);
