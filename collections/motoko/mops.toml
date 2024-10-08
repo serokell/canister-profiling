@@ -1,0 +1,7 @@
+[dependencies]
+base = "https://github.com/serokell/motoko-base#wip/s-and-witch/float-out-iter"
+baseunopt = "https://github.com/serokell/motoko-base#milestone-1"
+stableheapbtreemap = "1.3.0"
+map = "9.0.0"
+splay = "0.1.0"
+vector = "0.2.0"
