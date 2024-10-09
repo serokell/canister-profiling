@@ -3,25 +3,27 @@ load "../prelude.sh";
 
 // use smaller page_limit to speed things up, since the whole trace is too large even with 256M.
 let mo_config = record { start_page = 16; page_limit = 128 };
-let hashmap = wasm_profiling("motoko/.dfx/local/canisters/hashmap/hashmap.wasm", mo_config);
-let triemap = wasm_profiling("motoko/.dfx/local/canisters/triemap/triemap.wasm", mo_config);
+// let hashmap = wasm_profiling("motoko/.dfx/local/canisters/hashmap/hashmap.wasm", mo_config);
+// let triemap = wasm_profiling("motoko/.dfx/local/canisters/triemap/triemap.wasm", mo_config);
 let rbtree = wasm_profiling("motoko/.dfx/local/canisters/rbtree/rbtree.wasm", mo_config);
-let splay = wasm_profiling("motoko/.dfx/local/canisters/splay/splay.wasm", mo_config);
-let btree = wasm_profiling("motoko/.dfx/local/canisters/btreemap/btreemap.wasm", mo_config);
-let zhenya = wasm_profiling("motoko/.dfx/local/canisters/zhenya_hashmap/zhenya_hashmap.wasm", mo_config);
-let heap = wasm_profiling("motoko/.dfx/local/canisters/heap/heap.wasm", mo_config);
-let buffer = wasm_profiling("motoko/.dfx/local/canisters/buffer/buffer.wasm", mo_config);
-let vector = wasm_profiling("motoko/.dfx/local/canisters/vector/vector.wasm", mo_config);
+let persistentmap = wasm_profiling("motoko/.dfx/local/canisters/persistentmap/persistentmap.wasm", mo_config);
+let persistentmap_baseline = wasm_profiling("motoko/.dfx/local/canisters/persistentmap_baseline/persistentmap_baseline.wasm", mo_config);
+// let splay = wasm_profiling("motoko/.dfx/local/canisters/splay/splay.wasm", mo_config);
+// let btree = wasm_profiling("motoko/.dfx/local/canisters/btreemap/btreemap.wasm", mo_config);
+// let zhenya = wasm_profiling("motoko/.dfx/local/canisters/zhenya_hashmap/zhenya_hashmap.wasm", mo_config);
+// let heap = wasm_profiling("motoko/.dfx/local/canisters/heap/heap.wasm", mo_config);
+// let buffer = wasm_profiling("motoko/.dfx/local/canisters/buffer/buffer.wasm", mo_config);
+// let vector = wasm_profiling("motoko/.dfx/local/canisters/vector/vector.wasm", mo_config);
 
-let rs_config = record { start_page = 1; page_limit = 128 };
-let hashmap_rs = wasm_profiling("rust/.dfx/local/canisters/hashmap/hashmap.wasm", rs_config);
-let btreemap_rs = wasm_profiling("rust/.dfx/local/canisters/btreemap/btreemap.wasm", rs_config);
-let btreemap_stable_rs = wasm_profiling("rust/.dfx/local/canisters/btreemap_stable/btreemap_stable.wasm", rs_config);
-let heap_rs = wasm_profiling("rust/.dfx/local/canisters/heap/heap.wasm", rs_config);
-let heap_stable_rs = wasm_profiling("rust/.dfx/local/canisters/heap_stable/heap_stable.wasm", rs_config);
-let imrc_hashmap_rs = wasm_profiling("rust/.dfx/local/canisters/imrc_hashmap/imrc_hashmap.wasm", rs_config);
-let vector_rs = wasm_profiling("rust/.dfx/local/canisters/vector/vector.wasm", rs_config);
-let vector_stable_rs = wasm_profiling("rust/.dfx/local/canisters/vector_stable/vector_stable.wasm", rs_config);
+// let rs_config = record { start_page = 1; page_limit = 128 };
+// let hashmap_rs = wasm_profiling("rust/.dfx/local/canisters/hashmap/hashmap.wasm", rs_config);
+// let btreemap_rs = wasm_profiling("rust/.dfx/local/canisters/btreemap/btreemap.wasm", rs_config);
+// let btreemap_stable_rs = wasm_profiling("rust/.dfx/local/canisters/btreemap_stable/btreemap_stable.wasm", rs_config);
+// let heap_rs = wasm_profiling("rust/.dfx/local/canisters/heap/heap.wasm", rs_config);
+// let heap_stable_rs = wasm_profiling("rust/.dfx/local/canisters/heap_stable/heap_stable.wasm", rs_config);
+// let imrc_hashmap_rs = wasm_profiling("rust/.dfx/local/canisters/imrc_hashmap/imrc_hashmap.wasm", rs_config);
+// let vector_rs = wasm_profiling("rust/.dfx/local/canisters/vector/vector.wasm", rs_config);
+// let vector_stable_rs = wasm_profiling("rust/.dfx/local/canisters/vector_stable/vector_stable.wasm", rs_config);
 
 //let movm_rs = wasm_profiling("rust/.dfx/local/canisters/movm/movm.wasm");
 //let movm_dynamic_rs = wasm_profiling("rust/.dfx/local/canisters/movm_dynamic/movm_dynamic.wasm");
@@ -63,12 +65,62 @@ function perf(wasm, title, init, batch) {
   uninstall(cid);
 };
 
-let init_size = 1_000_000;
+
 let batch_size = 50;
-output(file, "\n## Map\n\n| |binary_size|generate 1m|max mem|batch_get 50|batch_put 50|batch_remove 50|upgrade|\n|--:|--:|--:|--:|--:|--:|--:|--:|\n");
+let sizes = vec {100; 1000; 10_000; 100_000; 1_000_000};
+
+output(file, stringify("\n## Map comparison\n\n| |binary_size|generate|max mem|batch_get 50|batch_put 50|batch_remove 50|upgrade|\n|--:|--:|--:|--:|--:|--:|--:|--:|\n"));
+
+function compare_rb_maps(init_size){
+  perf(rbtree, stringify("rbtree+", init_size), init_size, batch_size);
+  perf(persistentmap, stringify("persistentmap+", init_size), init_size, batch_size);
+};
+
+sizes.map(compare_rb_maps);
+
+function perf_persistent_map(wasm, title, init) {
+  let cid = install(wasm, encode (), null);
+
+  output(file, stringify("|", title, "|", init, "|"));
+  call cid.__toggle_tracing();
+  call cid.generate(init);
+
+  call cid.__toggle_tracing();
+  call cid.foldLeft();
+  let svg = stringify(title, "_foldLeft_", init, ".svg");
+  output(file, stringify("[", __cost__, "](", svg, ")|"));
+  flamegraph(cid, "persistentmap.foldLeft", svg);
+
+  call cid.foldRight();
+  let svg = stringify(title, "_foldRight_", init, ".svg");
+  output(file, stringify("[", __cost__, "](", svg, ")|"));
+  flamegraph(cid, "persistentmap.foldRight", svg);
+
+  call cid.mapfilter();
+  let svg = stringify(title, "_mapfilter_", init, ".svg");
+  output(file, stringify("[", __cost__, "](", svg, ")|"));
+  flamegraph(cid, "persistentmap.mapfilter", svg);
+
+  call cid.map();
+  let svg = stringify(title, "_map_", init, ".svg");
+  output(file, stringify("[", __cost__, "](", svg, ")|\n"));
+  flamegraph(cid, "persistentmap.map", svg);
+
+  uninstall(cid);
+};
+
+function compare_persistent_maps(init){
+  perf_persistent_map(persistentmap, "persistentmap", init);
+  perf_persistent_map(persistentmap_baseline, "persistentmap_baseline", init);
+};
+
+output(file, stringify("\n## Persistent map API\n\n| |size|foldLeft|foldRight|mapfilter|map|\n|--:|--:|--:|--:|--:|--:|\n"));
+
+sizes.map(compare_persistent_maps);
+
+/*
 perf(hashmap, "hashmap", init_size, batch_size);
 perf(triemap, "triemap", init_size, batch_size);
-perf(rbtree, "rbtree", init_size, batch_size);
 perf(splay, "splay", init_size, batch_size);
 perf(btree, "btree", init_size, batch_size);
 perf(zhenya, "zhenya_hashmap", init_size, batch_size);
@@ -97,7 +149,6 @@ perf(heap_stable_rs, "heap_stable_rs", init_size, batch_size);
 perf(vector_rs, "vec_rs", init_size, batch_size);
 perf(vector_stable_rs, "vec_stable_rs", init_size, batch_size);
 
-/*
 let movm_size = 10000;
 output(file, "\n## MoVM\n\n| |binary_size|generate 10k|max mem|batch_get 50|batch_put 50|batch_remove 50|\n|--:|--:|--:|--:|--:|--:|--:|\n");
 perf(hashmap, "hashmap", movm_size);
