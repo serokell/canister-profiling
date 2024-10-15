@@ -1,16 +1,16 @@
 {
   "canisters": {
-    "rbtree": {
+    "trieset": {
       "type": "motoko",
-      "main": "src/rbtree.mo"
+      "main": "src/trieset.mo"
     },
-    "persistentmap": {
+    "persistentset": {
       "type": "motoko",
-      "main": "src/persistentmap.mo"
+      "main": "src/persistentset.mo"
     },
-    "persistentmap_baseline": {
+    "persistentset_baseline": {
       "type": "motoko",
-      "main": "src/persistentmap_baseline.mo"
+      "main": "src/persistentset_baseline.mo"
     }
   },
   "defaults": {

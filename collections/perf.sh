@@ -5,9 +5,15 @@ load "../prelude.sh";
 let mo_config = record { start_page = 16; page_limit = 128 };
 // let hashmap = wasm_profiling("motoko/.dfx/local/canisters/hashmap/hashmap.wasm", mo_config);
 // let triemap = wasm_profiling("motoko/.dfx/local/canisters/triemap/triemap.wasm", mo_config);
-let rbtree = wasm_profiling("motoko/.dfx/local/canisters/rbtree/rbtree.wasm", mo_config);
-let persistentmap = wasm_profiling("motoko/.dfx/local/canisters/persistentmap/persistentmap.wasm", mo_config);
-let persistentmap_baseline = wasm_profiling("motoko/.dfx/local/canisters/persistentmap_baseline/persistentmap_baseline.wasm", mo_config);
+// let rbtree = wasm_profiling("motoko/.dfx/local/canisters/rbtree/rbtree.wasm", mo_config);
+// let persistentmap = wasm_profiling("motoko/.dfx/local/canisters/persistentmap/persistentmap.wasm", mo_config);
+// let persistentset_baseline = wasm_profiling("motoko/.dfx/local/canisters/persistentset_baseline/persistentset_baseline.wasm", mo_config);
+
+
+let trieset = wasm_profiling("motoko/.dfx/local/canisters/trieset/trieset.wasm", mo_config);
+let persistentset = wasm_profiling("motoko/.dfx/local/canisters/persistentset/persistentset.wasm", mo_config);
+let persistentset_baseline = wasm_profiling("motoko/.dfx/local/canisters/persistentset_baseline/persistentset_baseline.wasm", mo_config);
+
 // let splay = wasm_profiling("motoko/.dfx/local/canisters/splay/splay.wasm", mo_config);
 // let btree = wasm_profiling("motoko/.dfx/local/canisters/btreemap/btreemap.wasm", mo_config);
 // let zhenya = wasm_profiling("motoko/.dfx/local/canisters/zhenya_hashmap/zhenya_hashmap.wasm", mo_config);
@@ -57,10 +63,26 @@ function perf(wasm, title, init, batch) {
   output(file, stringify("[", __cost__, "](",svg, ")|"));
   flamegraph(cid, stringify(title, ".batch_remove"), svg);
 
+  call cid.intersect(batch);
+  let svg = stringify(title, "_intersect.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".intersect"), svg);
+
+  call cid.union(batch);
+  let svg = stringify(title, "_union.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".union"), svg);
+
+  call cid.diff(batch);
+  let svg = stringify(title, "_diff.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".diff"), svg);
+
   upgrade(cid, wasm, encode ());
   let svg = stringify(title, "_upgrade.svg");
   flamegraph(cid, stringify(title, ".upgrade"), svg);
   output(file, stringify("[", _, "](", svg, ")|\n"));
+
 
   uninstall(cid);
 };
@@ -69,16 +91,62 @@ function perf(wasm, title, init, batch) {
 let batch_size = 50;
 let sizes = vec {100; 1000; 10_000; 100_000; 1_000_000};
 
-output(file, stringify("\n## Map comparison\n\n| |binary_size|generate|max mem|batch_get 50|batch_put 50|batch_remove 50|upgrade|\n|--:|--:|--:|--:|--:|--:|--:|--:|\n"));
+output(file, stringify("\n## Collection benchmarks\n\n| |binary_size|generate|max mem|batch_get 50|batch_put 50|batch_remove 50|upgrade|\n|--:|--:|--:|--:|--:|--:|--:|--:|\n"));
 
-function compare_rb_maps(init_size){
-  perf(rbtree, stringify("rbtree+", init_size), init_size, batch_size);
-  perf(persistentmap, stringify("persistentmap+", init_size), init_size, batch_size);
+function compare_sets(init_size){
+  perf(trieset, stringify("trieset+", init_size), init_size, batch_size);
+  perf(persistentset_baseline, stringify("persistentset_baseline+", init_size), init_size, batch_size);
+  perf(persistentset, stringify("persistentset+", init_size), init_size, batch_size);
 };
 
-sizes.map(compare_rb_maps);
+sizes.map(compare_sets);
 
-function perf_persistent_map(wasm, title, init) {
+function perf_set_ops(wasm, title, init, batch) {
+  let cid = install(wasm, encode (), null);
+
+  output(file, stringify("|", title, "|", init, "|"));
+  call cid.__toggle_tracing();
+  call cid.generate(init);
+
+  call cid.__toggle_tracing();
+  call cid.intersect(batch);
+  let svg = stringify(title, "_intersect.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".intersect"), svg);
+
+  call cid.union(batch);
+  let svg = stringify(title, "_union.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".union"), svg);
+
+  call cid.diff(batch);
+  let svg = stringify(title, "_diff.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".diff"), svg);
+
+  call cid.equals(batch);
+  let svg = stringify(title, "_equals.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".equals"), svg);
+
+  call cid.isSubset(batch);
+  let svg = stringify(title, "_isSubset.svg");
+  output(file, stringify("[", __cost__, "](",svg, ")|"));
+  flamegraph(cid, stringify(title, ".isSubset"), svg);
+
+  output(file, "\n");
+  uninstall(cid);
+};
+
+output(file, stringify("\n## set API\n\n| |size|intersect|union|diff|equals|isSubset|\n|--:|--:|--:|--:|--:|--:|--:|\n"));
+function compare_set_ops(init_size){
+  perf_set_ops(trieset, stringify("trieset+", init_size), init_size, batch_size);
+  perf_set_ops(persistentset_baseline, stringify("persistentset_baseline+", init_size), init_size, batch_size);
+  perf_set_ops(persistentset, stringify("persistentset+", init_size), init_size, batch_size);
+};
+sizes.map(compare_set_ops);
+
+function perf_persistent_set(wasm, title, init) {
   let cid = install(wasm, encode (), null);
 
   output(file, stringify("|", title, "|", init, "|"));
@@ -89,34 +157,35 @@ function perf_persistent_map(wasm, title, init) {
   call cid.foldLeft();
   let svg = stringify(title, "_foldLeft_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|"));
-  flamegraph(cid, "persistentmap.foldLeft", svg);
+  flamegraph(cid, ".foldLeft", svg);
 
   call cid.foldRight();
   let svg = stringify(title, "_foldRight_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|"));
-  flamegraph(cid, "persistentmap.foldRight", svg);
+  flamegraph(cid, ".foldRight", svg);
 
   call cid.mapfilter();
   let svg = stringify(title, "_mapfilter_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|"));
-  flamegraph(cid, "persistentmap.mapfilter", svg);
+  flamegraph(cid, ".mapfilter", svg);
 
   call cid.map();
   let svg = stringify(title, "_map_", init, ".svg");
   output(file, stringify("[", __cost__, "](", svg, ")|\n"));
-  flamegraph(cid, "persistentmap.map", svg);
+  flamegraph(cid, ".map", svg);
 
   uninstall(cid);
 };
 
-function compare_persistent_maps(init){
-  perf_persistent_map(persistentmap, "persistentmap", init);
-  perf_persistent_map(persistentmap_baseline, "persistentmap_baseline", init);
+function compare_persistent_sets(init){
+  perf_persistent_set(persistentset_baseline, "persistentset_baseline", init);
+  perf_persistent_set(persistentset, "persistentset", init);
 };
 
-output(file, stringify("\n## Persistent map API\n\n| |size|foldLeft|foldRight|mapfilter|map|\n|--:|--:|--:|--:|--:|--:|\n"));
+output(file, stringify("\n## new set API \n\n| |size|foldLeft|foldRight|mapfilter|map|\n|--:|--:|--:|--:|--:|--:|\n"));
 
-sizes.map(compare_persistent_maps);
+sizes.map(compare_persistent_sets);
+
 
 /*
 perf(hashmap, "hashmap", init_size, batch_size);
