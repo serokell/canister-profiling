@@ -72,8 +72,9 @@ let sizes = vec {100; 1000; 10_000; 100_000; 1_000_000};
 output(file, stringify("\n## Map comparison\n\n| |binary_size|generate|max mem|batch_get 50|batch_put 50|batch_remove 50|upgrade|\n|--:|--:|--:|--:|--:|--:|--:|--:|\n"));
 
 function compare_rb_maps(init_size){
-  perf(rbtree, stringify("rbtree+", init_size), init_size, batch_size);
-  perf(persistentmap, stringify("persistentmap+", init_size), init_size, batch_size);
+  perf(persistentmap_baseline, stringify("persistentmap_baseline_", init_size), init_size, batch_size);
+  perf(persistentmap, stringify("persistentmap_", init_size), init_size, batch_size);
+  perf(rbtree, stringify("rbtree_", init_size), init_size, batch_size);
 };
 
 sizes.map(compare_rb_maps);

@@ -10,7 +10,7 @@ actor {
     stable let profiling = Profiling.init();
 
     let mapOps = Map.MapOps<Nat64>(Nat64.compare);
-    stable var rbMap = Map.empty<Nat64, Nat64>();
+    stable var rbMap = mapOps.empty<Nat64>();
     let rand = Random.new(null, 42);
 
     public func generate(size: Nat32) : async () {
@@ -39,10 +39,10 @@ actor {
         }
     };
     public func foldLeft() : async () {
-        ignore Map.foldLeft<Nat64, Nat64, Nat64>(rbMap, 0, func (x, y, acc) {x + y + acc});
+        ignore mapOps.foldLeft<Nat64, Nat64>(rbMap, 0, func (x, y, acc) {x + y + acc});
     };
     public func foldRight() : async () {
-        ignore Map.foldRight<Nat64, Nat64, Nat64>(rbMap, 0, func (x, y, acc) {x + y + acc});
+        ignore mapOps.foldRight<Nat64, Nat64>(rbMap, 0, func (x, y, acc) {x + y + acc});
     };
     public func mapfilter() : async () {
         ignore mapOps.mapFilter<Nat64, Nat64>(rbMap, func (key, value) {
@@ -53,6 +53,6 @@ actor {
         })
     };
     public func map() : async () {
-      ignore Map.map<Nat64, Nat64, Nat64>(rbMap, func (key, value) {key + value})
+      ignore mapOps.map<Nat64, Nat64>(rbMap, func (key, value) {key + value})
     };
 }
