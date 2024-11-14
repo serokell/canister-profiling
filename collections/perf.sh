@@ -72,7 +72,7 @@ function perf_gen(wasm, title, init, batch) {
 function perf_new_api(wasm, title, init) {
   let cid = install(wasm, encode (), null);
 
-  output(file, stringify("|", init, "|"));
+  output(file, stringify("|", title, "|"));
   call cid.__toggle_tracing();
   call cid.generate(init);
 
