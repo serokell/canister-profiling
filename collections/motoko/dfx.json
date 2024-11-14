@@ -12,6 +12,18 @@
       "type": "motoko",
       "main": "src/rbtree.mo"
     },
+    "orderedmap": {
+      "type": "motoko",
+      "main": "src/orderedmap.mo"
+    },
+    "trieset": {
+      "type": "motoko",
+      "main": "src/trieset.mo"
+    },
+    "orderedset": {
+      "type": "motoko",
+      "main": "src/orderedset.mo"
+    },
     "splay": {
       "type": "motoko",
       "main": "src/splay.mo"
